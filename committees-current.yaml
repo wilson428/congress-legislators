@@ -772,6 +772,7 @@
   name: Joint Economic Committee
   url: http://jec.senate.gov/
   thomas_id: JSEC
+  house_committee_id: EC
   senate_committee_id: JSEC
   rss_url: http://www.jec.senate.gov/republicans/public/?a=RSS.Feed
   minority_rss_url: http://www.jec.senate.gov/public/?a=RSS.Feed
@@ -933,6 +934,8 @@
   - name: Strategic Forces
     thomas_id: '16'
     wikipedia: United States Senate Armed Services Subcommittee on Strategic Forces
+  - name: Cybersecurity
+    thomas_id: '21'
   rss_url: http://www.armed-services.senate.gov/press/index.cfm?xml=Press%20Releases,RSS2.0
   wikipedia: United States Senate Committee on Armed Services
 - type: senate

@@ -57,7 +57,7 @@ def run():
     # r = download("http://clerk.house.gov/xml/lists/MemberData.xml", "clerk_xml")
     # dom = lxml.etree.fromstring(r.encode("utf8")) # must be bytes to parse if there is an encoding declaration inside the string
     
-    #for some reason the download method creates encodign issues?
+    #for some reason using the download method creates encoding issues?
     r = requests.get("http://clerk.house.gov/xml/lists/MemberData.xml")
     dom = lxml.etree.fromstring(r.content)
 
@@ -86,11 +86,14 @@ def run():
       if bioguide_id not in congressmen_by_bioguide:
         print("{} ({}) was skiped because not found in current".format(official_name, bioguide_id))
         continue
+      
+      #is using caucus better than using party?
       caucus = xml_member.xpath("member-info/caucus")[0].text
       party = "majority"
       if caucus != "R":
         party = "minority"
-      print(bioguide_id)
+      #print(bioguide_id)
+      
       #for each committee membership
       for cm in xml_member.findall("committee-assignments/committee"):
         if "comcode" not in cm.attrib:
@@ -100,12 +103,7 @@ def run():
           print("Skipping {} because joint?".format(house_committee_id))
           continue #TODO
         thomas_committee_id = house_ref[house_committee_id]["thomas_id"]
-        #print(thomas_committee_id)
-        thomas_id = None
-        if "thomas" in congressmen_by_bioguide[bioguide_id]["id"]:
-          thomas_id = congressmen_by_bioguide[bioguide_id]["id"]["thomas"]
-        
-        #print(house_committee_id)
+
         # if house_committee_id not in comm_mbrs:
         #   continue #TODO joint committees skipped
         membership = OrderedDict()
@@ -117,18 +115,9 @@ def run():
             membership["title"] = "Chair"
           else:
             membership["title"] = "Ranking Member"
-        if thomas_id:
-          membership["thomas"] = thomas_id
         membership["bioguide"] = bioguide_id
 
-        #print("here")
-        comm_mbrs.setdefault(thomas_committee_id, []).append(membership)
-
-    
-    sortedkeys = sorted(comm_mbrs.keys())
-    print(sortedkeys)
-    for comm in sortedkeys:
-      committee_membership[comm] = sorted(comm_mbrs[comm], key=lambda entry: (entry["party"], entry["rank"]))
+        committee_membership.setdefault(thomas_committee_id, []).append(membership)
 
   def scrape_house_alt():
     for id, cx in list(house_ref.items()):
@@ -353,9 +342,8 @@ def run():
   # preserving us flexibility to be inclusive of IDs in the main leg files
   def ids_from(moc):
     ids = {}
-    for id in ["bioguide", "thomas"]:
-      if id in moc:
-        ids[id] = moc[id]
+    if "bioguide" in moc:
+      ids["bioguide"] = moc["bioguide"]
     if len(ids) == 0:
       raise ValueError("Missing an official ID for this legislator, won't be able to link back")
     return ids
@@ -372,10 +360,14 @@ def run():
 
   # MAIN
 
-  scrape_house()
-  #scrape_house_xml()
+  #scrape_house()
+  scrape_house_xml()
   scrape_senate()
   restore_house_members_on_joint_committees()
+
+  # sorted_committee_membership=OrderedDict()
+  # for comm in sorted(committee_membership.keys()):
+  #   sorted_committee_membership[comm] = sorted(committee_membership[comm], key=lambda entry: (entry["party"], entry["rank"]))
 
   save_data(committee_membership, "committee-membership-current.yaml")
   save_data(committees_current, "committees-current.yaml")
