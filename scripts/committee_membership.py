@@ -62,7 +62,6 @@ def run():
     dom = lxml.etree.fromstring(r.content)
 
     committees = dom.xpath("/MemberData/committees")[0]
-    comm_mbrs = {}
     for xml_cx in committees.findall("committee"):
       house_committee_id = xml_cx.attrib["comcode"][:2]
       if xml_cx.attrib["type"] == "joint":
