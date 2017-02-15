@@ -4,6 +4,7 @@
 # and updates the committees-current.yaml file with metadata including
 # name, url, address, and phone number.
 
+import requests
 import re, lxml.html, lxml.etree, io, datetime
 from collections import OrderedDict
 import utils
@@ -37,6 +38,7 @@ def run():
   today = datetime.datetime.now().date()
   legislators_current = load_data("legislators-current.yaml")
   congressmen = { }
+  congressmen_by_bioguide = {}
   senators = { }
   for moc in legislators_current:
     term = moc["terms"][-1]
@@ -44,12 +46,89 @@ def run():
       raise ValueError("Member's last listed term is not current: " + repr(moc) + " / " + term["start"])
     if term["type"] == "rep":
       congressmen["%s%02d" % (term["state"], term["district"])] = moc
+      congressmen_by_bioguide[moc["id"]["bioguide"]] = moc
     elif term["type"] == "sen":
       for n in [moc["name"]] + moc.get("other_names", []):
         senators[(term["state"], n["last"])] = moc
 
 
   # Scrape clerk.house.gov...
+  def scrape_house_xml():
+    # r = download("http://clerk.house.gov/xml/lists/MemberData.xml", "clerk_xml")
+    # dom = lxml.etree.fromstring(r.encode("utf8")) # must be bytes to parse if there is an encoding declaration inside the string
+    
+    #for some reason the download method creates encodign issues?
+    r = requests.get("http://clerk.house.gov/xml/lists/MemberData.xml")
+    dom = lxml.etree.fromstring(r.content)
+
+    committees = dom.xpath("/MemberData/committees")[0]
+    comm_mbrs = {}
+    for xml_cx in committees.findall("committee"):
+      house_committee_id = xml_cx.attrib["comcode"][:2]
+      if xml_cx.attrib["type"] == "joint":
+        #TODO
+        continue
+      cx = house_ref[house_committee_id]
+      cx["name"] = "House " + xml_cx.find("committee-fullname").text
+      #1301 LHOB; Washington, DC 20515-6001
+      building = xml_cx.attrib["com-building-code"]
+      if building == "C":
+        building = "CAPITOL"
+      cx["address"] = xml_cx.attrib["com-room"] + " " + building \
+         + "; Washington, DC " + xml_cx.attrib["com-zip"] + "-" + xml_cx.attrib["com-zip-suffix"]
+      cx["phone"] = "(202) " + xml_cx.attrib["com-phone"]
+      #comm_mbrs[house_committee_id] = []
+    
+    members = dom.xpath("/MemberData/members")[0]
+    for xml_member in members.findall("member"):
+      bioguide_id = xml_member.xpath("member-info/bioguideID")[0].text
+      official_name = xml_member.xpath("member-info/official-name")[0].text
+      if bioguide_id not in congressmen_by_bioguide:
+        print("{} ({}) was skiped because not found in current".format(official_name, bioguide_id))
+        continue
+      caucus = xml_member.xpath("member-info/caucus")[0].text
+      party = "majority"
+      if caucus != "R":
+        party = "minority"
+      print(bioguide_id)
+      #for each committee membership
+      for cm in xml_member.findall("committee-assignments/committee"):
+        if "comcode" not in cm.attrib:
+          continue #some are blank?
+        house_committee_id = cm.attrib["comcode"][:2]
+        if house_committee_id not in house_ref:
+          print("Skipping {} because joint?".format(house_committee_id))
+          continue #TODO
+        thomas_committee_id = house_ref[house_committee_id]["thomas_id"]
+        #print(thomas_committee_id)
+        thomas_id = None
+        if "thomas" in congressmen_by_bioguide[bioguide_id]["id"]:
+          thomas_id = congressmen_by_bioguide[bioguide_id]["id"]["thomas"]
+        
+        #print(house_committee_id)
+        # if house_committee_id not in comm_mbrs:
+        #   continue #TODO joint committees skipped
+        membership = OrderedDict()
+        membership["name"] = official_name
+        membership["party"] = party
+        membership["rank"] = int(cm.attrib["rank"])
+        if membership["rank"] == 1:
+          if membership["party"] == "majority":
+            membership["title"] = "Chair"
+          else:
+            membership["title"] = "Ranking Member"
+        if thomas_id:
+          membership["thomas"] = thomas_id
+        membership["bioguide"] = bioguide_id
+
+        #print("here")
+        comm_mbrs.setdefault(thomas_committee_id, []).append(membership)
+
+    
+    sortedkeys = sorted(comm_mbrs.keys())
+    print(sortedkeys)
+    for comm in sortedkeys:
+      committee_membership[comm] = sorted(comm_mbrs[comm], key=lambda entry: (entry["party"], entry["rank"]))
 
   def scrape_house_alt():
     for id, cx in list(house_ref.items()):
@@ -294,6 +373,7 @@ def run():
   # MAIN
 
   scrape_house()
+  #scrape_house_xml()
   scrape_senate()
   restore_house_members_on_joint_committees()
 
