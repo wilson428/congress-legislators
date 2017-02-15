@@ -70,18 +70,20 @@ def run():
         continue
       cx = house_ref[house_committee_id]
       cx["name"] = "House " + xml_cx.find("committee-fullname").text
-      #1301 LHOB; Washington, DC 20515-6001
+      
       building = xml_cx.attrib["com-building-code"]
       if building == "C":
         building = "CAPITOL"
+      #address format: 1301 LHOB; Washington, DC 20515-6001
       cx["address"] = xml_cx.attrib["com-room"] + " " + building \
          + "; Washington, DC " + xml_cx.attrib["com-zip"] + "-" + xml_cx.attrib["com-zip-suffix"]
       cx["phone"] = "(202) " + xml_cx.attrib["com-phone"]
-      #comm_mbrs[house_committee_id] = []
     
     members = dom.xpath("/MemberData/members")[0]
     for xml_member in members.findall("member"):
       bioguide_id = xml_member.xpath("member-info/bioguideID")[0].text
+      if not bioguide_id: #sometimes the xml has vacancies as blanks
+        continue
       official_name = xml_member.xpath("member-info/official-name")[0].text
       if bioguide_id not in congressmen_by_bioguide:
         print("{} ({}) was skiped because not found in current".format(official_name, bioguide_id))
@@ -92,17 +94,28 @@ def run():
       party = "majority"
       if caucus != "R":
         party = "minority"
-      #print(bioguide_id)
-      
-      #for each committee membership
-      for cm in xml_member.findall("committee-assignments/committee"):
-        if "comcode" not in cm.attrib:
+            
+      #for each committee or subcommittee membership
+      for cm in xml_member.xpath("committee-assignments/committee|committee-assignments/subcommittee"):
+        if "comcode" in cm.attrib:
+          type = "committee"
+        elif "subcomcode" in cm.attrib:
+          type = "subcommittee"
+        else:
           continue #some are blank?
-        house_committee_id = cm.attrib["comcode"][:2]
+        if type == "committee":
+          house_committee_id = cm.attrib["comcode"][:2]
+        else:
+          house_committee_id = cm.attrib["subcomcode"][:2]
+
         if house_committee_id not in house_ref:
           print("Skipping {} because joint?".format(house_committee_id))
           continue #TODO
-        thomas_committee_id = house_ref[house_committee_id]["thomas_id"]
+
+        if type == "committee":
+          thomas_committee_id = house_ref[house_committee_id]["thomas_id"]
+        else:
+          thomas_committee_id = house_ref[house_committee_id]["thomas_id"] + cm.attrib["subcomcode"][2:]
 
         # if house_committee_id not in comm_mbrs:
         #   continue #TODO joint committees skipped
@@ -116,6 +129,8 @@ def run():
           else:
             membership["title"] = "Ranking Member"
         membership["bioguide"] = bioguide_id
+        if house_ref[house_committee_id]["type"] == "joint":
+          membership["chamber"] = "house"
 
         committee_membership.setdefault(thomas_committee_id, []).append(membership)
 
@@ -365,11 +380,11 @@ def run():
   scrape_senate()
   restore_house_members_on_joint_committees()
 
-  # sorted_committee_membership=OrderedDict()
-  # for comm in sorted(committee_membership.keys()):
-  #   sorted_committee_membership[comm] = sorted(committee_membership[comm], key=lambda entry: (entry["party"], entry["rank"]))
+  sorted_committee_membership=OrderedDict()
+  for comm in sorted(committee_membership.keys()):
+    sorted_committee_membership[comm] = sorted(committee_membership[comm], key=lambda entry: (entry["party"], entry["rank"]))
 
-  save_data(committee_membership, "committee-membership-current.yaml")
+  save_data(sorted_committee_membership, "committee-membership-current.yaml")
   save_data(committees_current, "committees-current.yaml")
 
 if __name__ == '__main__':
