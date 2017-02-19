@@ -5,7 +5,7 @@
 # name, url, address, and phone number.
 
 import requests
-import re, lxml.html, lxml.etree, io, datetime
+import re, lxml.html, lxml.etree, datetime
 from collections import OrderedDict
 import utils
 from utils import download, load_data, save_data, parse_date
@@ -37,7 +37,6 @@ def run():
   # since the House/Senate pages do not provide IDs for Members of Congress
   today = datetime.datetime.now().date()
   legislators_current = load_data("legislators-current.yaml")
-  congressmen = { }
   congressmen_by_bioguide = {}
   senators = { }
   for moc in legislators_current:
@@ -45,7 +44,6 @@ def run():
     if today < parse_date(term["start"]) or today > parse_date(term["end"]):
       raise ValueError("Member's last listed term is not current: " + repr(moc) + " / " + term["start"])
     if term["type"] == "rep":
-      congressmen["%s%02d" % (term["state"], term["district"])] = moc
       congressmen_by_bioguide[moc["id"]["bioguide"]] = moc
     elif term["type"] == "sen":
       for n in [moc["name"]] + moc.get("other_names", []):
@@ -126,107 +124,6 @@ def run():
 
         committee_membership.setdefault(thomas_committee_id, []).append(membership)
 
-
-  def scrape_house_committee(cx, output_code, house_code):
-    # load the House Clerk's committee membership page for the committee
-    # (it is encoded in utf-8 even though the page indicates otherwise, and
-    # while we don't really care, it helps our sanity check that compares
-    # names)
-    url = "http://clerk.house.gov/committee_info/index.aspx?%s=%s" % ('comcode' if house_code[-2:] == '00' else 'subcomcode', house_code)
-    body = download(url, "committees/membership/house/%s.html" % house_code, force)
-    dom = lxml.html.parse(io.StringIO(body)).getroot()
-
-    # update official name metadata
-    if house_code[-2:] == "00":
-      cx["name"] = "House " + str(dom.cssselect("#com_display h3")[0].text_content())
-    else:
-      cx["name"] = str(dom.cssselect("#subcom_title h4")[0].text_content())
-
-    # update address/phone metadata
-    address_info = re.search(r"""Mailing Address:\s*(.*\S)\s*Telephone:\s*(\(202\) .*\S)""", dom.cssselect("#address")[0].text_content(), re.I | re.S)
-    if not address_info: raise Exception("Failed to parse address info in %s." % house_code)
-    cx["address"] = address_info.group(1)
-    cx["address"] = re.sub(r"\s+", " ", cx["address"])
-    cx["address"] = re.sub(r"(.*\S)(Washington, DC \d+)\s*(-\d+)?", lambda m : m.group(1) + "; " + m.group(2) + (m.group(3) if m.group(3) else ""), cx["address"])
-    cx["phone"] = address_info.group(2)
-
-    # get the ratio line to use in a sanity check later
-    ratio = dom.cssselect("#ratio")
-    if len(ratio): # some committees are missing
-      ratio = re.search(r"Ratio (\d+)/(\d+)", ratio[0].text_content())
-    else:
-      ratio = None
-
-    # scan the membership, which is listed by party
-    for i, party, nodename in ((1, 'majority', 'primary'), (2, 'minority', 'secondary')):
-      ctr = 0
-      for rank, node in enumerate(dom.cssselect("#%s_group li" % nodename)):
-        ctr += 1
-        lnk = node.cssselect('a')
-        if len(lnk) == 0:
-          if node.text_content() == "Vacancy": continue
-          raise ValueError("Failed to parse a <li> node.")
-        moc = lnk[0].get('href')
-        m = re.search(r"statdis=([A-Z][A-Z]\d\d)", moc)
-        if not m: raise ValueError("Failed to parse member link: " + moc)
-        if not m.group(1) in congressmen:
-          print("Vacancy discrepancy? " + m.group(1))
-          continue
-
-        moc = congressmen[m.group(1)]
-        found_name = node.cssselect('a')[0].text_content().replace(", ", "")
-
-        if moc['name'].get("official_full", None) is None:
-          print("No official_full field for %s" % found_name)
-          continue
-
-        if found_name != moc['name']['official_full']:
-          print("Name mismatch: %s (in our file) vs %s (on the Clerk page)" % (moc['name']['official_full'], node.cssselect('a')[0].text_content()))
-
-        entry = OrderedDict()
-        entry["name"] = moc['name']['official_full']
-        entry["party"] = party
-        entry["rank"] = rank+1
-        if rank == 0:
-          entry["title"] = "Chair" if entry["party"] == "majority" else "Ranking Member" # not explicit, frown
-        entry.update(ids_from(moc["id"]))
-
-        committee_membership.setdefault(output_code, []).append(entry)
-
-        # the .tail attribute has the text to the right of the link
-        m = re.match(r", [A-Z][A-Z](,\s*)?(.*\S)?", lnk[0].tail)
-        if m.group(2):
-          # Chairman, Vice Chair, etc. (all but Ex Officio) started appearing on subcommittees around Feb 2014.
-          # For the chair, this should overwrite the implicit title given for the rank 0 majority party member.
-          if m.group(2) in ("Chair", "Chairman", "Chairwoman"):
-            entry["title"] = "Chair"
-          elif m.group(2) in ("Vice Chair", "Vice Chairman"):
-            entry["title"] = "Vice Chair"
-
-          elif m.group(2) == "Ex Officio":
-            entry["title"] = m.group(2)
-
-          else:
-            raise ValueError("Unrecognized title information '%s' in %s." % (m.group(2), url))
-
-      # sanity check we got the right number of nodes
-      if ratio and ctr != int(ratio.group(i)): raise ValueError("Parsing didn't get the right count of members.")
-
-    # scan for subcommittees
-    for subcom in dom.cssselect("#subcom_list li a"):
-      m = re.search("subcomcode=(..(\d\d))", subcom.get('href'))
-      if not m: raise ValueError("Failed to parse subcommittee link.")
-
-      for sx in cx['subcommittees']:
-        if sx["thomas_id"] == m.group(2):
-          break
-      else:
-        print("Subcommittee not found, creating it", output_code, m.group(1))
-        sx = OrderedDict()
-        sx['name'] = "[not initialized]" # will be set inside of scrape_house_committee
-        sx['thomas_id'] = m.group(2)
-        cx['subcommittees'].append(sx)
-      scrape_house_committee(sx, cx["thomas_id"] + sx["thomas_id"], m.group(1))
 
   # Scrape senate.gov....
   def scrape_senate():
