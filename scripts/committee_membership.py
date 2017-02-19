@@ -356,7 +356,10 @@ def run():
 
   sorted_committee_membership=OrderedDict()
   for comm in sorted(committee_membership.keys()):
-    sorted_committee_membership[comm] = sorted(committee_membership[comm], key=lambda entry: (entry["party"], entry["rank"]))
+    if (comm[:1] == "J"): #only joint committees have thomas ids starting with J
+      sorted_committee_membership[comm] = sorted(committee_membership[comm], key=lambda entry: (entry["chamber"], entry["party"], entry["rank"]))
+    else:
+      sorted_committee_membership[comm] = sorted(committee_membership[comm], key=lambda entry: (entry["party"], entry["rank"]))
 
   save_data(sorted_committee_membership, "committee-membership-current.yaml")
   save_data(committees_current, "committees-current.yaml")
