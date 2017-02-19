@@ -53,7 +53,7 @@ def run():
 
 
   # Scrape clerk.house.gov...
-  def scrape_house_xml():
+  def scrape_house():
     # r = download("http://clerk.house.gov/xml/lists/MemberData.xml", "clerk_xml")
     # dom = lxml.etree.fromstring(r.encode("utf8")) # must be bytes to parse if there is an encoding declaration inside the string
     
@@ -64,9 +64,7 @@ def run():
     committees = dom.xpath("/MemberData/committees")[0]
     for xml_cx in committees.findall("committee"):
       house_committee_id = xml_cx.attrib["comcode"][:2]
-      if xml_cx.attrib["type"] == "joint":
-        #TODO
-        continue
+      #if this throws an error, make sure house_committee_id is set in committees-current.yaml for the committee
       cx = house_ref[house_committee_id]
       cx["name"] = "House " + xml_cx.find("committee-fullname").text
       
@@ -107,9 +105,6 @@ def run():
         else:
           house_committee_id = cm.attrib["subcomcode"][:2]
 
-        if house_committee_id not in house_ref:
-          print("Skipping {} because joint?".format(house_committee_id))
-          continue #TODO
 
         if type == "committee":
           thomas_committee_id = house_ref[house_committee_id]["thomas_id"]
@@ -133,22 +128,6 @@ def run():
 
         committee_membership.setdefault(thomas_committee_id, []).append(membership)
 
-  def scrape_house_alt():
-    for id, cx in list(house_ref.items()):
-      scrape_house_committee(cx, cx["thomas_id"], id + "00")
-
-  def scrape_house():
-    """The old way of scraping House committees was to start with the committee list
-    at the URL below, but this page no longer has links to the committee info pages
-    even though those pages exist. Preserving this function in case we need it later."""
-    url = "http://clerk.house.gov/committee_info/index.aspx"
-    body = download(url, "committees/membership/house.html", force)
-    for id, name in re.findall(r'<a href="/committee_info/index.aspx\?comcode=(..)00">(.*)</a>', body, re.I):
-      if id not in house_ref:
-        print("Unrecognized committee:", id, name)
-        continue
-      cx = house_ref[id]
-      scrape_house_committee(cx, cx["thomas_id"], id + "00")
 
   def scrape_house_committee(cx, output_code, house_code):
     # load the House Clerk's committee membership page for the committee
@@ -373,9 +352,7 @@ def run():
         committee_membership[c].append(m)
 
   # MAIN
-
-  #scrape_house()
-  scrape_house_xml()
+  scrape_house()
   scrape_senate()
   restore_house_members_on_joint_committees()
 

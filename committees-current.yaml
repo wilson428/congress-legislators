@@ -777,24 +777,35 @@
   rss_url: http://www.jec.senate.gov/republicans/public/?a=RSS.Feed
   minority_rss_url: http://www.jec.senate.gov/public/?a=RSS.Feed
   wikipedia: Joint Economic Committee
+  address: SD-G01 DSOB; Washington, DC 20510-6432
+  phone: (202) 224-5171
 - type: joint
   name: Joint Committee on the Library
   url: https://cha.house.gov/jointcommittees/joint-committee-library
   thomas_id: JSLC
+  house_committee_id: JL
   senate_committee_id: JSLC
   wikipedia: Joint Committee on the Library
+  address: SR-305 RSOB; Washington, DC 20510-6439
+  phone: (202) 224-6352
 - type: joint
   name: Joint Committee on Printing
   url: https://cha.house.gov/jointcommittees/joint-committee-on-printing
   thomas_id: JSPR
   senate_committee_id: JSPR
+  house_committee_id: JP
   wikipedia: Joint Committee on Printing
+  address: 1309 LHOB; Washington, DC 20515-6446
+  phone: (202) 225-8281
 - type: joint
   name: Joint Committee on Taxation
   url: https://www.jct.gov
   thomas_id: JSTX
+  house_committee_id: IT
   senate_committee_id: JSTX
   wikipedia: United States Congress Joint Committee on Taxation
+  address: 502 FHOB; Washington, DC 20515-6453
+  phone: (202) 225-3621
 - type: senate
   name: United States Senate Caucus on International Narcotics Control
   url: http://www.drugcaucus.senate.gov/
