@@ -111,8 +111,6 @@ def run():
         else:
           thomas_committee_id = house_ref[house_committee_id]["thomas_id"] + cm.attrib["subcomcode"][2:]
 
-        # if house_committee_id not in comm_mbrs:
-        #   continue #TODO joint committees skipped
         membership = OrderedDict()
         membership["name"] = official_name
         membership["party"] = party
