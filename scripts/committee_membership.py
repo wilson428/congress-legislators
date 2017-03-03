@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# Scrape house.gov and senate.gov for current committee membership,
-# and updates the committees-current.yaml file with metadata including
-# name, url, address, and phone number.
-
 # Data Sources:
 #   House:
 #     http://clerk.house.gov/xml/lists/MemberData.xml
