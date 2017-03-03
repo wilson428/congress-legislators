@@ -113,7 +113,12 @@ def run():
         membership["name"] = official_name
         membership["party"] = party
         membership["rank"] = int(cm.attrib["rank"])
-        if membership["rank"] == 1:
+
+        if "leadership" in cm.attrib:
+          #gender neutral
+          membership["title"] = cm.attrib["leadership"].replace("woman", "").replace("man", "")
+        elif membership["rank"] == 1:
+          #xml doesn't contain ranking member titles
           if membership["party"] == "majority":
             membership["title"] = "Chair"
           else:
