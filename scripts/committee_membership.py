@@ -4,6 +4,21 @@
 # and updates the committees-current.yaml file with metadata including
 # name, url, address, and phone number.
 
+# Data Sources:
+#   House:
+#     http://clerk.house.gov/xml/lists/MemberData.xml
+#   Senate:
+#     https://www.senate.gov/general/committee_membership/committee_memberships_{thomas_id}.xml
+
+# Data Files Updated:
+#   committee-membership-current.yaml:
+#     All entries are overwritten except for house members of joint committees
+#     which have to be manually entered since there is no source of this data
+#   committees-current.yaml:
+#     Fro House committees, updates name, address, and phone
+#     For Senate committees, updates name and url
+
+
 import requests
 import re, lxml.html, lxml.etree, datetime
 from collections import OrderedDict
