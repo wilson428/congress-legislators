@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1529014069193.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "6445E507",
+    "lastKnownWriteTime" : 7598263558597509126,
+    "last_content_update" : 1529014069193,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "D9C63640",
+        "caption" : "congress",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=congress&cache_key=D9C63640",
+        "displayedObservations" : "140",
+        "environment" : "",
+        "object" : "congress",
+        "preview" : "0",
+        "totalObservations" : "140",
+        "variables" : "4"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

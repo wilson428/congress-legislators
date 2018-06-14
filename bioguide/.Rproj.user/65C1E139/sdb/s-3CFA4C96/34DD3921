@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "members <- read.csv(\"./retirements.csv\", stringsAsFactors = F)\nmembers$start <- as.Date(members$start)\nmembers$end <- as.Date(members$end)\n\ncongress <- read.csv(\"./sessions.csv\", stringsAsFactors = F)\ncongress$start_date <- as.Date(congress$start_date)\ncongress$end_date <- as.Date(congress$end_date)\n",
+    "created" : 1529009514405.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3341337458",
+    "id" : "34DD3921",
+    "lastKnownWriteTime" : 1529014385,
+    "last_content_update" : 1529014385738,
+    "path" : "~/Desktop/congress-legislators/analyze.R",
+    "project_path" : "analyze.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

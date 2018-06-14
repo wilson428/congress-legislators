@@ -1,0 +1,9 @@
+{
+    "path" : "~/Desktop/congress-legislators",
+    "sortOrder" : [
+        {
+            "ascending" : true,
+            "columnIndex" : 2
+        }
+    ]
+}
