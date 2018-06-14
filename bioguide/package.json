@@ -1,0 +1,32 @@
+{
+  "name": "congress-legislators",
+  "version": "1.0.0",
+  "description": "congress-legislators ====================",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unitedstates/congress-legislators.git"
+  },
+  "keywords": [
+    "congress"
+  ],
+  "author": "Chris Wilson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/unitedstates/congress-legislators/issues"
+  },
+  "homepage": "https://github.com/unitedstates/congress-legislators#readme",
+  "dependencies": {
+    "async": "^2.6.1",
+    "cheerio": "^1.0.0-rc.2",
+    "d3": "^5.4.0",
+    "downcache": "0.0.9",
+    "js-yaml": "^3.12.0"
+  }
+}
